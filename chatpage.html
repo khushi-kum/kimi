@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>kimi - Chat Interface</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #000000;
+            font-family: Arial, sans-serif;
+        }
+
+        .chat-container {
+            width: 100vw;
+            height: 100vh;
+            background: #0d0d0d;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 2px solid #8b5cf6;
+            position: relative;
+        }
+
+        .divider {
+            width: 0%;
+            height: 3px;
+            background: linear-gradient(90deg, #555, #999);
+            margin: 50px auto 10px auto;
+            border: none;
+            opacity: 0;
+            animation: fadeIn 0.5s ease-in-out forwards;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; width: 0%; }
+            100% { opacity: 1; width: 100%; }
+        }
+
+        .messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 100px; /* To avoid overlap with input */
+        }
+
+        .message {
+            padding: 15px 20px;
+            border-radius: 10px;
+            max-width: 70%;
+            word-wrap: break-word;
+            font-size: 18px;
+        }
+
+        .user {
+            align-self: flex-end;
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .bot {
+            align-self: flex-start;
+            background-color: #333;
+            color: white;
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            flex-direction: row;
+        }
+
+        .search-box-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-box {
+            padding: 15px 60px 15px 20px;
+            font-size: 20px;
+            border: 1px solid #333;
+            border-radius: 10px;
+            background-color: #1a1a1a;
+            color: white;
+            outline: none;
+            width: 500px;
+        }
+
+        .plus-button {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: #8b5cf6;
+            font-size: 32px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .send-button {
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 18px;
+            transition: transform 0.2s;
+        }
+
+        .send-button:hover {
+            transform: scale(1.05);
+        }
+
+        .welcome-message {
+            color: transparent;
+            padding: 10px;
+            text-align: center;
+            font-size: 60px;
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .return-button {
+            position: absolute;
+            top: 10px;
+            right: 80px;
+            font-size: 20px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            background: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-0.3s ease;
+        }
+
+        .return-button:hover {
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+        }
+
+        .forzon-title {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 30px;
+            background: -webkit-linear-gradient(45deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="kimi-title">kimi</div>
+        <div class="divider"></div>
+        <div class="welcome-message">What's in your mind?</div>
+
+        <!-- Messages -->
+        <div class="messages" id="messages"></div>
+
+        <!-- Input area -->
+        <div class="search-container">
+            <div class="search-box-wrapper">
+                <input type="text" class="search-box" placeholder="Tell me...">
+                <button class="plus-button" onclick="addNewFeature()">+</button>
+            </div>
+            <button class="send-button" onclick="sendMessage()">GO</button>
+        </div>
+
+        <button class="return-button">new chat</button>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const searchBox = document.querySelector('.search-box');
+            const userMessage = searchBox.value.trim();
+
+            if (userMessage === '') return;
+
+            const messagesContainer = document.getElementById('messages');
+
+            // Show user message
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.className = 'message user';
+            userMessageDiv.textContent = userMessage;
+            messagesContainer.appendChild(userMessageDiv);
+
+            searchBox.value = '';
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            // Send to backend
+            try {
+                const response = await fetch('http://localhost:3000/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: userMessage })
+                });
+
+                const data = await response.json();
+
+                // Show bot reply
+                const botMessageDiv = document.createElement('div');
+                botMessageDiv.className = 'message bot';
+                botMessageDiv.textContent = data.reply;
+                messagesContainer.appendChild(botMessageDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            } catch (error) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'message bot';
+                errorDiv.textContent = 'Error contacting backend 😞';
+                messagesContainer.appendChild(errorDiv);
+            }
+        }
+
+        function addNewFeature() {
+            alert("You clicked the plus button! Implement your feature here.");
+        }
+    </script>
+</body>
+</html>
